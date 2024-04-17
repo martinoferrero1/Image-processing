@@ -15,13 +15,24 @@ def yellow_detect(imagen):
     return yellow_detected
 
 def delete_yellow(imagen,amarillo):
-    mask_umbral = (amarillo > 0).all(axis=2)
-    yellow_deleted = imagen[mask_umbral] = [0, 0, 0]  
-    return yellow_deleted
+
+    # return imagen_sin_amarillo
+    mask_umbral = (amarillo > 0).all(axis=2)  # True donde el color es amarillo
+
+    # Invertir la máscara para obtener píxeles que no son amarillos
+    mask_no_amarillo = np.logical_not(mask_umbral)
+
+    # Convertir la máscara a tipo uint8 para usar con bitwise_and
+    mask_no_amarillo = mask_no_amarillo.astype(np.uint8) * 255
+
+    # Aplicar la máscara para eliminar píxeles amarillos de la imagen
+    imagen_sin_amarillo = cv2.bitwise_and(imagen, imagen, mask=mask_no_amarillo)
+
+    return imagen_sin_amarillo
 
 def moho_detect(imagen_hsv,imagen_with_gaussian):
     # Definir rangos de color para el moho (verde amarillento)
-    lower_verde = np.array([25, 50, 50])   # Umbral inferior en HSV
+    lower_verde = np.array([25, 20, 30])   # Umbral inferior en HSV
     upper_verde = np.array([80, 255, 255])  # Umbral superior en HSV
 
     # Crear una máscara para identificar el color del moho
@@ -38,7 +49,13 @@ def paint(imagen,imagen_moho):
     
     # Reemplazar los píxeles en la segunda imagen donde la intersección es mayor que cero
     _, mask_binaria = cv2.threshold(imagen_moho, 1, 255, cv2.THRESH_BINARY)
-    imagen_rgb_gris[mask_binaria > 0] = imagen_moho[mask_binaria > 0]
+    # imagen_rgb_gris[mask_binaria > 0] = imagen_moho[mask_binaria > 0]
+    coordenadas = np.argwhere(mask_binaria > 0)
+
+# Iterar sobre cada posición (fila, columna) donde mask_binaria > 0
+    for coordenada in coordenadas:
+        fila, columna = coordenada[:2]  # Obtener las primeras dos posiciones (fila y columna)
+        imagen_rgb_gris[fila,columna] = imagen[fila,columna]
     return imagen_rgb_gris
 
 def view_image(title,imagen):
@@ -49,3 +66,5 @@ def view_image(title,imagen):
     cv2.namedWindow(title, cv2.WINDOW_NORMAL)  # Permite redimensionar la ventana
     cv2.resizeWindow(title, 600, 400)  
     cv2.imshow(title, imagen) 
+    cv2.waitKey(0) 
+    cv2.destroyAllWindows()  
