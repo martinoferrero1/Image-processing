@@ -1,43 +1,24 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import process as p 
+import process 
+import preprocess
+import os
 
-#CARGA DE IMAGEN
-nombre_archivo = r'.\\images\\limones1.jpg'
-imagen = cv2.imread(nombre_archivo)
+# Directorio donde se encuentran las imágenes
+directorio_imagenes = "./images"
+histogramas = []
 
-# Comprueba si la imagen se cargó correctamente
-if imagen is not None:
-    
-    p.view_image('Imagen original',imagen)
-    
-    #APLICA FILTRO GAUSSIANO (Disminuir ruido y eliminar detalles finos)
-    imagen_with_gaussian = cv2.GaussianBlur(imagen, (7, 7), 2)
-    p.view_image('Gaussiano',imagen_with_gaussian)
-    
-    #CAMBIA FORMATO BGR A HSV (Resalta color amarillo, lo hace homogeneo)
-    imagen_hsv = cv2.cvtColor(imagen_with_gaussian, cv2.COLOR_BGR2HSV)
-    p.view_image('RGB A HSV',imagen_hsv)
-    
-    #APLICAR FILTRO DE DETECCION AMARILLO
-    imagen_amarillo= p.yellow_detect(imagen_hsv)
-    p.view_image('FILTRO AMARILLO',imagen_amarillo)
-    
-    #QUITAR AMARILLO DE ORIGINAL
-    imagen_sin_amarillo = p.delete_yellow(imagen_hsv,imagen_amarillo)
-    p.view_image('SIN AMARILLO',imagen_sin_amarillo)
+# Tamaño deseado para las imágenes redimensionadas
+nuevo_ancho = 500
+nuevo_alto = 500
 
-    #APLICAR FILTRO DE MOHO
-    imagen_moho = p.moho_detect(imagen_sin_amarillo,imagen_with_gaussian)
-    p.view_image('FILTRO MOHO',imagen_moho)
-    
-    #RESALTAR MOHO EN LA ORIGINAL GRIS
-    imagen_resultante = p.paint(imagen,imagen_moho)
+for filename in os.listdir(directorio_imagenes):
+    if filename.endswith(".jpg") or filename.endswith(".png"):
+        path_imagen = os.path.join(directorio_imagenes, filename)
+        img_redimensionada = preprocess.ajustar_imagen(path_imagen, nuevo_ancho, nuevo_alto)
+        cv2.imshow(filename, img_redimensionada)
+        cv2.waitKey(0)  # Esperar a que se presione una tecla para cerrar la ventana
 
-    #VER RESULTADOS
-    p.view_image('Imagen resultado',imagen_resultante)
+cv2.destroyAllWindows()
 
-
-else:
-    print(f'Error: No se pudo abrir la imagen "{nombre_archivo}"')
