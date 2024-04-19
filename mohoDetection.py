@@ -20,10 +20,16 @@ for filename in os.listdir(directorio_imagenes):
         cv2.imshow(filename, img_redimensionada)
         cv2.waitKey(0)  # Esperar a que se presione una tecla para cerrar la ventana
         imagen_with_gaussian = cv2.GaussianBlur(img_redimensionada, (7, 7), 2)
-        cv2.imshow(filename, imagen_with_gaussian)
-        cv2.waitKey(0)
         result = preprocess.resaltar_limon(imagen_with_gaussian)
         cv2.imshow(filename, result)
         cv2.waitKey(0)
-cv2.destroyAllWindows()
+        result = cv2.resize(result, (img_redimensionada.shape[1], img_redimensionada.shape[0]))
+        result = cv2.bitwise_not(result)
+        kernel = np.ones((5,5),np.uint8)
+        result = cv2.dilate(result, kernel, iterations=5)
+        imagen_negra = np.zeros_like(img_redimensionada)
+        imagen_negra[result == 0] = img_redimensionada[result == 0]
+        cv2.imshow(filename, imagen_negra)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
