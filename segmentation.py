@@ -1,60 +1,51 @@
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import process as p 
 
-def convertir_escala_grises(imagen):
-    imagen_gris = cv2.cvtColor(imagen, cv2.COLOR_RGB2GRAY)
-    return imagen_gris
+#CARGA DE IMAGEN
+nombre_archivo = r'.\\images\\limones1.jpg'
+imagen = cv2.imread(nombre_archivo)
 
-def detectar_bordes(imagen_gris):
-    bordes = cv2.Canny(imagen_gris, threshold1=30, threshold2=100)
-    return bordes
+# Comprueba si la imagen se cargó correctamente
+# Verificar si la imagen se cargó correctamente
+if imagen is not None:
+    
+    p.view_image("Resultado: ",imagen)
+    # Convertir la imagen a escala de grises
+    imagen_gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
 
-def crecimiento_regiones(imagen_gris, semilla):
-    h, w = imagen_gris.shape[:2]
-    visitado = np.zeros_like(imagen_gris)
-    cola = []
-    cola.append(semilla)
-    region = []
-    
-    while cola:
-        punto = cola.pop(0)
-        if visitado[punto] == 0:
-            visitado[punto] = 1
-            region.append(punto)
-            
-            for dx in [-1, 0, 1]:
-                for dy in [-1, 0, 1]:
-                    nx, ny = punto[0] + dx, punto[1] + dy
-                    if 0 <= nx < h and 0 <= ny < w:
-                        if visitado[nx, ny] == 0:
-                            if abs(int(imagen_gris[nx, ny]) - int(imagen_gris[punto])) < 30:
-                                cola.append((nx, ny))
-    
-    return region
+    # Aplicar el operador Sobel para la detección de bordes en dirección X (horizontal)
+    sobelx = cv2.Sobel(imagen_gris, cv2.CV_64F, 1, 0, ksize=3)  # Sobel en dirección X
 
-def segmentar_imagen(imagen):
-    imagen_gris = convertir_escala_grises(imagen)
-    bordes = detectar_bordes(imagen_gris)
-    p.view_image('Bordes: ',bordes)
-    # Obtener dimensiones de la imagen
-    h, w = imagen_gris.shape[:2]
+    # Aplicar el operador Sobel para la detección de bordes en dirección Y (vertical)
+    sobely = cv2.Sobel(imagen_gris, cv2.CV_64F, 0, 1, ksize=3)  # Sobel en dirección Y
+
+    # Calcular la magnitud del gradiente combinando bordes en X e Y
+    magnitude = np.sqrt(np.square(sobelx) + np.square(sobely))
+
+    # Escalar la magnitud del gradiente a un rango de 0 a 255
+    magnitude = np.uint8(255 * magnitude / np.max(magnitude))
+
+    # Crear una máscara basada en la magnitud del gradiente (valores mayores que 0)
+    _, mask = cv2.threshold(magnitude, 0, 255, cv2.THRESH_BINARY)
+
+    # Convertir la máscara a tipo uint8 (asegurarse de que sea del mismo tipo que la imagen original)
+    mask = mask.astype(np.uint8)
+
+    # Aplicar la máscara a la imagen original para segmentar los píxeles de interés
+    segmented_image = cv2.bitwise_and(imagen, imagen, mask=mask)
     
-    # Encontrar semilla para el crecimiento de regiones (por ejemplo, centroide del limón)
-    semilla = (h//2, w//2)  # Usando centroide como semilla
-    
-    # Realizar crecimiento de regiones
-    region_limones = crecimiento_regiones(imagen_gris, semilla)
-    
-    # Crear máscara para la región segmentada
-    mascara = np.zeros_like(imagen_gris)
-    for punto in region_limones:
-        mascara[punto] = 255
-    
-    # Aplicar máscara a la imagen original
-    imagen_segmentada = cv2.bitwise_and(imagen, imagen, mask=mascara)
-    
-    p.view_image('Segmentation: ',imagen_segmentada)
-    
-    return 
+    img = cv2.cvtColor(segmented_image, cv2.COLOR_BGR2GRAY)
+
+    # Definir el kernel para la operación de erosión
+    kernel = np.ones((5, 5), np.uint8)  # Puedes ajustar el tamaño del kernel según sea necesario
+
+    # Aplicar la operación de erosión
+    img_erosion = cv2.erode(magnitude, kernel, iterations=1)
+
+
+    p.view_image("Resultado: ",img_erosion)
+
+else:
+    print(f'Error: No se pudo abrir la imagen "{nombre_archivo}"')
