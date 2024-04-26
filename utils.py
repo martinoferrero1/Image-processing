@@ -26,21 +26,26 @@ def resaltar_limon(imagen):
     upper_lemon = np.array([252, 255, 255])  # Umbral superior para H, S y V
     # Crear una máscara para los limones
     mask = cv2.inRange(hsv, lower_lemon, upper_lemon)
+    view_image("(1)", mask)
     # Invertir la máscara
     mask = cv2.bitwise_not(mask)
+    view_image("(2)", mask)
     # Aplicar la máscara a la imagen original
     result_parcial = cv2.bitwise_and(imagen, imagen, mask=mask)
-    
+    view_image("(3)", result_parcial)
     # Definir el kernel para la operación de erosión
     kernel = np.ones((5, 5), np.uint8)
     # Aplicar la operación de erosión
-    eroded_image = cv2.erode(result_parcial, kernel, iterations=3)
+    eroded_image = cv2.erode(result_parcial, kernel, iterations=3) #opening alternativa
     result = cv2.bitwise_not(eroded_image)
+    view_image("(4)", result)
     result = cv2.resize(result, (result_parcial.shape[1], result_parcial.shape[0]))
     final_result = cv2.bitwise_not(result)
+    view_image("(5)", final_result)
     result = cv2.dilate(final_result, kernel, iterations=5)
     imagen_negra = np.zeros_like(imagen)
     imagen_negra[result == 0] = imagen[result == 0]
+    view_image("(6)", imagen_negra)
     return imagen_negra
 
 def color_detect(imagen,lower_yellow,upper_yellow):
@@ -117,10 +122,10 @@ def process(imagen):
     #APLICAR FILTRO DE DETECCION BLANCO
 
     # Ajustar el rango inferior para el filtro de detección de blanco en HSV
-    lower_white = np.array([0, 0, 180])   # Umbral inferior en HSV para tonos blancos y suaves (tonalidad, saturación, luminosidad)
+    lower_white = np.array([0, 0, 140])   # Umbral inferior en HSV para tonos blancos y suaves (tonalidad, saturación, luminosidad)
     #upper_white = np.array([40, 30, 255])  # Umbral superior en HSV para tonos blancos y suaves (tonalidad, saturación, luminosidad)
     # lower_white = np.array([0, 0, 180])   # Umbral inferior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
-    upper_white = np.array([40, 50, 255])  # Umbral superior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
+    upper_white = np.array([255, 180, 255])  # Umbral superior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
     # lower_white = np.array([0, 50, 180])   # Umbral inferior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
     # upper_white = np.array([40, 90, 255])  # Umbral superior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
 
