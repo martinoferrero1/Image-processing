@@ -17,7 +17,7 @@ def preprocess(imagen):
 
 #-----------------------------------------------------PROCESAMIENTO------------------------------------------------------#
 
-def resaltar_limon(imagen):
+def segmentar_limon(imagen):
     #image = cv2.imread(imagen)
     # Convertir la imagen a espacio de color HSV
     hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
@@ -26,27 +26,27 @@ def resaltar_limon(imagen):
     upper_lemon = np.array([252, 255, 255])  # Umbral superior para H, S y V
     # Crear una máscara para los limones
     mask = cv2.inRange(hsv, lower_lemon, upper_lemon)
-    view_image("(1)", mask)
+    #view_image("(1)", mask)
     # Invertir la máscara
     mask = cv2.bitwise_not(mask)
-    view_image("(2)", mask)
+    #view_image("(2)", mask)
     # Aplicar la máscara a la imagen original
     result_parcial = cv2.bitwise_and(imagen, imagen, mask=mask)
-    view_image("(3)", result_parcial)
+    #view_image("(3)", result_parcial)
     # Definir el kernel para la operación de erosión
     kernel = np.ones((5, 5), np.uint8)
     # Aplicar la operación de erosión
     eroded_image = cv2.erode(result_parcial, kernel, iterations=3) #opening alternativa
     result = cv2.bitwise_not(eroded_image)
-    view_image("(4)", result)
+    #view_image("(4)", result)
     result = cv2.resize(result, (result_parcial.shape[1], result_parcial.shape[0]))
     final_result = cv2.bitwise_not(result)
-    view_image("(5)", final_result)
+    #view_image("(5)", final_result)
     result = cv2.dilate(final_result, kernel, iterations=5)
-    imagen_negra = np.zeros_like(imagen)
-    imagen_negra[result == 0] = imagen[result == 0]
-    view_image("(6)", imagen_negra)
-    return imagen_negra
+    imagen_segmentada = np.zeros_like(imagen)
+    imagen_segmentada[result == 0] = imagen[result == 0]
+    #view_image("(6)", imagen_negra)
+    return imagen_segmentada
 
 def color_detect(imagen,lower_yellow,upper_yellow):
     
@@ -97,7 +97,7 @@ def add_color_pixels(image_dest, image_source, color_to_add):
 
 def process(imagen):
 
-    imagen = resaltar_limon(imagen)
+    imagen = segmentar_limon(imagen)
     #view_image('Imagen original',imagen)
     
     #APLICA FILTRO GAUSSIANO (Disminuir ruido y eliminar detalles finos)
@@ -110,41 +110,51 @@ def process(imagen):
     
     #APLICAR FILTRO DE VERDE
     # Ajustar el rango para el filtro de detección de verde en HSV
-    lower_verde = np.array([28, 25, 25])   # Umbral inferior en HSV para tonos verdes oscuros (tonalidad, saturación, luminosidad)
-    upper_verde = np.array([100, 255, 255])  # Umbral superior en HSV para tonos verdes (tonalidad, saturación, luminosidad)
+    #lower_verde = np.array([28, 25, 25])   # Umbral inferior en HSV para tonos verdes oscuros (tonalidad, saturación, luminosidad)
+    #upper_verde = np.array([100, 255, 255])  # Umbral superior en HSV para tonos verdes (tonalidad, saturación, luminosidad)
+    #lower_verde = np.array([30, 25, 25])   # Umbral inferior en HSV para tonos verdes oscuros (tonalidad, saturación, luminosidad)
+    #upper_verde = np.array([120, 255, 255])  # Umbral superior en HSV para tonos verdes (tonalidad, saturación, luminosidad)
+    lower_verde = np.array([30, 18, 0])   # Umbral inferior en HSV para tonos verdes oscuros (tonalidad, saturación, luminosidad)
+    upper_verde = np.array([180, 255, 255])  # Umbral superior en HSV para tonos verdes (tonalidad, saturación, luminosidad)
     imagen_verde = color_detect(imagen_hsv,lower_verde,upper_verde)
     #view_image('FILTRO MOHO',imagen_moho)
     color_verde = np.array([50, 200, 50])
     #RESALTAR MOHO EN LA ORIGINAL GRIS
     imagen_con_verde = paint(imagen,imagen_verde,color_verde)
+    #view_image("Parte verde detectada", imagen_con_verde)
     imagen_sin_verde = delete_color(imagen_hsv,imagen_verde)
+    #view_image("Imagen con extraccion de verde detectado", imagen_sin_verde)
     
     #APLICAR FILTRO DE DETECCION BLANCO
 
     # Ajustar el rango inferior para el filtro de detección de blanco en HSV
-    lower_white = np.array([0, 0, 140])   # Umbral inferior en HSV para tonos blancos y suaves (tonalidad, saturación, luminosidad)
+    lower_white = np.array([0, 0, 20])   # Umbral inferior en HSV para tonos blancos y suaves (tonalidad, saturación, luminosidad)
     #upper_white = np.array([40, 30, 255])  # Umbral superior en HSV para tonos blancos y suaves (tonalidad, saturación, luminosidad)
     # lower_white = np.array([0, 0, 180])   # Umbral inferior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
-    upper_white = np.array([255, 180, 255])  # Umbral superior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
+    upper_white = np.array([255, 105, 255])  # Umbral superior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
     # lower_white = np.array([0, 50, 180])   # Umbral inferior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
     # upper_white = np.array([40, 90, 255])  # Umbral superior en HSV para blancos y grises (tonalidad, saturación, luminosidad)
-
     imagen_blanco = color_detect(imagen_sin_verde,lower_white,upper_white)
     #view_image('FILTRO AMARILLO',imagen_amarillo)
     color_blanco = np.array([255, 255, 255])
     imagen_con_blanco = paint(imagen,imagen_blanco,color_blanco)
+    #view_image("Parte blanca detectada", imagen_con_blanco)
     imagen_sin_blanco = delete_color(imagen_sin_verde,imagen_blanco)
+    #view_image("Imagen con extraccion de blanco detectado", imagen_sin_blanco)
     
     #APLICAR FILTRO DE DETECCION AMARILLO
         # Crear una máscara 
     # lower_yellow = np.array([18, 150, 100])   # Umbral inferior en HSV para amarillo intenso (tonalidad, saturación, luminosidad)
     # upper_yellow = np.array([40, 255, 255])   # Umbral superior en HSV para amarillo intenso (tonalidad, saturación, luminosidad)
-    lower_yellow = np.array([17, 100, 50])   # Umbral inferior en HSV para tonos amarillos (tonalidad, saturación, luminosidad)
-    upper_yellow = np.array([40, 255, 255])   # Umbral superior en HSV para tonos amarillos (tonalidad, saturación, luminosidad)
+    #lower_yellow = np.array([17, 100, 50])   # Umbral inferior en HSV para tonos amarillos (tonalidad, saturación, luminosidad)
+    #upper_yellow = np.array([40, 255, 255])   # Umbral superior en HSV para tonos amarillos (tonalidad, saturación, luminosidad)
+    lower_yellow = np.array([0, 106, 0])   # Umbral inferior en HSV para tonos amarillos (tonalidad, saturación, luminosidad)
+    upper_yellow = np.array([31, 255, 255])   # Umbral superior en HSV para tonos amarillos (tonalidad, saturación, luminosidad)
     imagen_amarillo= color_detect(imagen_sin_blanco,lower_yellow,upper_yellow)
     #view_image('FILTRO AMARILLO',imagen_amarillo)
     color_amarillo = np.array([51, 255, 255])
     imagen_con_amarillo = paint(imagen,imagen_amarillo,color_amarillo)
+    #view_image("Parte amarilla detectada", imagen_con_amarillo)
     #QUITAR AMARILLO DE ORIGINAL
 
     result = add_color_pixels(imagen_with_gaussian,imagen_con_verde,color_verde)   
@@ -172,7 +182,7 @@ def calculate_color_percentage(image,colors):
 def plot_color_percentage_bars(colors, percentages):
     plt.figure(figsize=(8, 6), facecolor='lightgrey')
     colors_rgb = [(color[2]/255, color[1]/255, color[0]/255) for color in colors]  # Convertir a formato RGB
-    labels = ["limón no apto", "hongo", "limón apto"]
+    labels = ["Hongo Aspergillus\no región inmadura", "Hongo Penicillium", "Limón apto"]
     plt.pie(percentages, labels=labels,
             colors=colors_rgb, autopct='%1.1f%%', startangle=140)
     plt.title('Estado del limón')
@@ -188,5 +198,5 @@ def postprocess(imagen):
 
 def view_image(title,imagen):
     cv2.namedWindow(title, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(title, 600, 600)  
+    cv2.resizeWindow(title, 800, 600)  
     cv2.imshow(title, imagen) 
