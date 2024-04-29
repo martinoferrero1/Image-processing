@@ -18,7 +18,6 @@ def preprocess(imagen):
 #-----------------------------------------------------PROCESAMIENTO------------------------------------------------------#
 
 def segmentar_limon(imagen):
-    #image = cv2.imread(imagen)
     # Convertir la imagen a espacio de color HSV
     hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
     # Definir el rango de color para los limones en HSV
@@ -26,26 +25,27 @@ def segmentar_limon(imagen):
     upper_lemon = np.array([252, 255, 255])  # Umbral superior para H, S y V
     # Crear una máscara para los limones
     mask = cv2.inRange(hsv, lower_lemon, upper_lemon)
-    #view_image("(1)", mask)
+    view_image("Mascara binaria inicial", mask)
     # Invertir la máscara
     mask = cv2.bitwise_not(mask)
-    #view_image("(2)", mask)
+    view_image("Mascara binaria invertida", mask)
     # Aplicar la máscara a la imagen original
-    result_parcial = cv2.bitwise_and(imagen, imagen, mask=mask)
-    #view_image("(3)", result_parcial)
+    seg_binaria_parcial = cv2.bitwise_and(imagen, imagen, mask=mask)
+    view_image("Segmentacion binaria inicial", seg_binaria_parcial)
     # Definir el kernel para la operación de erosión
-    kernel = np.ones((5, 5), np.uint8)
+    kernel = np.ones((15, 15), np.uint8)
     # Aplicar la operación de erosión
-    eroded_image = cv2.erode(result_parcial, kernel, iterations=3) #opening alternativa
-    result = cv2.bitwise_not(eroded_image)
-    #view_image("(4)", result)
-    result = cv2.resize(result, (result_parcial.shape[1], result_parcial.shape[0]))
-    final_result = cv2.bitwise_not(result)
-    #view_image("(5)", final_result)
-    result = cv2.dilate(final_result, kernel, iterations=5)
+    eroded_image = cv2.erode(seg_binaria_parcial, kernel, iterations=3)
+    # Definir el kernel para la operación de dilatación
+    kernel = np.ones((18, 18), np.uint8)
+    # Aplicar la operación de dilatación a la imagen erosionada
+    seg_binaria = cv2.dilate(eroded_image, kernel, iterations=3)
+    view_image("Segmentacion binaria luego aplicar operaciones morfologicas", seg_binaria)
+    seg_binaria = cv2.resize(seg_binaria, (imagen.shape[1], imagen.shape[0]))
+    # Se crea una imagen completamente negra del mismo tamaño que la original, y se reemplazan los píxeles donde va el limón por los de la original usando la segmentación binaria
     imagen_segmentada = np.zeros_like(imagen)
-    imagen_segmentada[result == 0] = imagen[result == 0]
-    #view_image("(6)", imagen_negra)
+    imagen_segmentada[seg_binaria == 0] = imagen[seg_binaria == 0]
+    view_image("Segmentacion final del limon con fondo negro", imagen_segmentada)
     return imagen_segmentada
 
 def color_detect(imagen,lower_yellow,upper_yellow):
@@ -55,21 +55,21 @@ def color_detect(imagen,lower_yellow,upper_yellow):
     yellow_detected = cv2.bitwise_and(imagen, imagen, mask=mask_yellow)
     return yellow_detected
 
-def delete_color(imagen,amarillo):
+def delete_color(imagen, color):
 
     # return imagen_sin_amarillo
-    mask_umbral = (amarillo > 0).all(axis=2)  # True donde el color es amarillo
+    mask_umbral = (color > 0).all(axis=2)  # True donde el color es el indicado por parametro
 
-    # Invertir la máscara para obtener píxeles que no son amarillos
-    mask_no_amarillo = np.logical_not(mask_umbral)
+    # Invertir la máscara para obtener píxeles que no son de ese color
+    mask_no_color = np.logical_not(mask_umbral)
 
     # Convertir la máscara a tipo uint8 para usar con bitwise_and
-    mask_no_amarillo = mask_no_amarillo.astype(np.uint8) * 255
+    mask_no_color = mask_no_color.astype(np.uint8) * 255
 
-    # Aplicar la máscara para eliminar píxeles amarillos de la imagen
-    imagen_sin_amarillo = cv2.bitwise_and(imagen, imagen, mask=mask_no_amarillo)
+    # Aplicar la máscara para eliminar píxeles de ese color de la imagen
+    imagen_sin_color = cv2.bitwise_and(imagen, imagen, mask=mask_no_color)
 
-    return imagen_sin_amarillo
+    return imagen_sin_color
 
 def paint(imagen,imagen_moho, color):
     imagen_gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
@@ -97,15 +97,13 @@ def add_color_pixels(image_dest, image_source, color_to_add):
 def process(imagen):
 
     imagen = segmentar_limon(imagen)
-    #view_image('Imagen original',imagen)
     
     #APLICA FILTRO GAUSSIANO (Disminuir ruido y eliminar detalles finos)
     imagen_with_gaussian = cv2.GaussianBlur(imagen, (7, 7), 2)
-    #view_image('Gaussiano',imagen_with_gaussian)
     
-    #CAMBIA FORMATO BGR A HSV (Resalta color amarillo, lo hace homogeneo)
+    # Convertir la imagen a espacio de color HSV
     imagen_hsv = cv2.cvtColor(imagen_with_gaussian, cv2.COLOR_BGR2HSV)
-    #view_image('RGB A HSV',imagen_hsv)
+    view_image('Imagen del limon segmentado de RGB a HSV', imagen_hsv)
     
     #APLICAR FILTRO DE VERDE
     # Ajustar el rango para el filtro de detección de verde en HSV
