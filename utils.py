@@ -55,7 +55,7 @@ def color_detect(imagen,lower_color, upper_color):
     return color_detected
 
 def delete_color(imagen, color):
-    # return imagen_sin_amarillo
+    # Este metodo retorna la imagen sin el color especificado
     mask_umbral = (color > 0).all(axis=2)  # True donde el color es el indicado por parametro
 
     # Invertir la máscara para obtener píxeles que no son de ese color
