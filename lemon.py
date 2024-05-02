@@ -19,7 +19,7 @@ nombres_archivos = os.listdir(directorio_imagenes)
 # Recorrer cada archivo en el directorio
 #for nombre_archivo in nombres_archivos:
     # Construir la ruta completa de la imagen
-path_img = os.path.join(directorio_imagenes, "limones5.jpg")
+path_img = os.path.join(directorio_imagenes, "limones6.jpg")
 
 # Leer la imagen usando OpenCV
 imagen = cv2.imread(path_img)

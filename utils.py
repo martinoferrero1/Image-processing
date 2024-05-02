@@ -29,13 +29,12 @@ def segmentar_limon(imagen):
     # Invertir la máscara
     mask = cv2.bitwise_not(mask)
     view_image("Mascara binaria invertida", mask)
-    # Aplicar la máscara a la imagen original
-    seg_binaria_parcial = cv2.bitwise_and(imagen, imagen, mask=mask)
-    view_image("Segmentacion binaria inicial", seg_binaria_parcial)
+    #seg_binaria_parcial = cv2.bitwise_and(imagen, imagen, mask=mask) # Esta operacion de hacer una composicion de la imagen original con sí misma a partir de la máscara, no se hace ya que no tiene sentido en este caso recuperar detalles extra del fondo de la imagen como marcas de agua
+    #view_image("Segmentacion binaria inicial", seg_binaria_parcial)
     # Definir el kernel para la operación de erosión
     kernel = np.ones((15, 15), np.uint8)
-    # Aplicar la operación de erosión
-    eroded_image = cv2.erode(seg_binaria_parcial, kernel, iterations=3)
+    # Aplicar la operación de erosión a la máscara binaria obtenida
+    eroded_image = cv2.erode(mask, kernel, iterations=3)
     # Definir el kernel para la operación de dilatación
     kernel = np.ones((18, 18), np.uint8)
     # Aplicar la operación de dilatación a la imagen erosionada
