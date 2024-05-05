@@ -25,10 +25,10 @@ def segmentar_limon(imagen):
     upper_lemon = np.array([252, 255, 255])  # Umbral superior para H, S y V
     # Crear una máscara para los limones
     mask = cv2.inRange(hsv, lower_lemon, upper_lemon)
-    view_image("Mascara binaria inicial", mask)
+    #view_image("Mascara binaria inicial", mask)
     # Invertir la máscara
     mask = cv2.bitwise_not(mask)
-    view_image("Mascara binaria invertida", mask)
+    #view_image("Mascara binaria invertida", mask)
     #seg_binaria_parcial = cv2.bitwise_and(imagen, imagen, mask=mask) # Esta operacion de hacer una composicion de la imagen original con sí misma a partir de la máscara, no se hace ya que no tiene sentido en este caso recuperar detalles extra del fondo de la imagen como marcas de agua
     #view_image("Segmentacion binaria inicial", seg_binaria_parcial)
     # Definir el kernel para la operación de erosión
@@ -39,12 +39,12 @@ def segmentar_limon(imagen):
     kernel = np.ones((18, 18), np.uint8)
     # Aplicar la operación de dilatación a la imagen erosionada
     seg_binaria = cv2.dilate(eroded_image, kernel, iterations=3)
-    view_image("Segmentacion binaria luego aplicar operaciones morfologicas", seg_binaria)
+    #view_image("Segmentacion binaria luego aplicar operaciones morfologicas", seg_binaria)
     seg_binaria = cv2.resize(seg_binaria, (imagen.shape[1], imagen.shape[0]))
     # Se crea una imagen completamente negra del mismo tamaño que la original, y se reemplazan los píxeles donde va el limón por los de la original usando la segmentación binaria
     imagen_segmentada = np.zeros_like(imagen)
     imagen_segmentada[seg_binaria == 0] = imagen[seg_binaria == 0]
-    view_image("Segmentacion final del limon con fondo negro", imagen_segmentada)
+    #view_image("Segmentacion final del limon con fondo negro", imagen_segmentada)
     return imagen_segmentada
 
 def color_detect(imagen,lower_color, upper_color):
@@ -99,7 +99,7 @@ def process(imagen):
     
     # Convertir la imagen a espacio de color HSV
     imagen_hsv = cv2.cvtColor(imagen_with_gaussian, cv2.COLOR_BGR2HSV)
-    view_image('Imagen del limon segmentado de RGB a HSV', imagen_hsv)
+    #view_image('Imagen del limon segmentado de RGB a HSV', imagen_hsv)
     
     #APLICAR FILTRO DE DETECCION VERDE
 
@@ -110,10 +110,10 @@ def process(imagen):
     color_verde = np.array([50, 200, 50])
     # Resaltar regiones de moho verde o azulado o zonas inmaduras en la original gris
     imagen_con_verde = paint(imagen,imagen_verde,color_verde)
-    view_image("Parte verde detectada", imagen_con_verde)
+    view_image("Region detectada de hongo Aspergillus o inmadura", imagen_con_verde)
     # Eliminar el verde detectado para continuar detectando las otras regiones sin tener en cuenta los píxeles que ya se consideraron para este caso
     imagen_sin_verde = delete_color(imagen_hsv,imagen_verde)
-    view_image("Imagen con extraccion de verde detectado", imagen_sin_verde)
+    #view_image("Imagen con extraccion de verde detectado", imagen_sin_verde)
     
     #APLICAR FILTRO DE DETECCION BLANCO
 
@@ -122,9 +122,9 @@ def process(imagen):
     imagen_blanco = color_detect(imagen_sin_verde,lower_white,upper_white)
     color_blanco = np.array([255, 255, 255])
     imagen_con_blanco = paint(imagen,imagen_blanco,color_blanco)
-    view_image("Parte blanca detectada", imagen_con_blanco)
+    view_image("Region detectada de hongo Penicillium", imagen_con_blanco)
     imagen_sin_blanco = delete_color(imagen_sin_verde,imagen_blanco)
-    view_image("Imagen con extraccion de blanco detectado", imagen_sin_blanco)
+    #view_image("Imagen con extraccion de blanco detectado", imagen_sin_blanco)
     
     #APLICAR FILTRO DE DETECCION AMARILLO
 
@@ -133,16 +133,16 @@ def process(imagen):
     imagen_amarillo= color_detect(imagen_sin_blanco,lower_yellow,upper_yellow)
     color_amarillo = np.array([51, 255, 255])
     imagen_con_amarillo = paint(imagen,imagen_amarillo,color_amarillo)
-    view_image("Parte amarilla detectada", imagen_con_amarillo)
+    view_image("Region detectada de limon sano", imagen_con_amarillo)
 
     #SE SEGMENTA INTERNAMENTE EL LIMON A PARTIR DE LAS IMAGENES BGR QUE SE OBTUVIERON CON CADA UNA DE LAS ZONAS DE INTERES DETECTADAS INDIVIDUALMENTE
 
     result = add_color_pixels(imagen_with_gaussian,imagen_con_verde,color_verde)
-    view_image("Segmentacion interna del limon a partir de la primera region detectada", result)
+    #view_image("Segmentacion interna del limon a partir de la primera region detectada", result)
     result = add_color_pixels(result,imagen_con_blanco,color_blanco)
-    view_image("Segmentacion interna del limon a partir de la primera y segunda region detectada", result)
+    #view_image("Segmentacion interna del limon a partir de la primera y segunda region detectada", result)
     result = add_color_pixels(result,imagen_con_amarillo,color_amarillo)
-    view_image("Segmentacion interna compoleta del limon, a partir de las tres regiones detectadas", result)
+    #view_image("Segmentacion interna compoleta del limon, a partir de las tres regiones detectadas", result)
     # Se retorna una imagen en formato BGR donde se unifican las segmentaciones parciales de cada region interna del limon en una sola
     return result
     
@@ -181,5 +181,6 @@ def postprocess(imagen):
 
 def view_image(title,imagen):
     cv2.namedWindow(title, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(title, 800, 600)  
+    # La imagen se redimensiona con un largo de 600 y un ancho de 800 aprovechando la carcateristica de que en general los limones tienen un mayor ancho que alto 
+    cv2.resizeWindow(title, 800, 600)
     cv2.imshow(title, imagen) 
